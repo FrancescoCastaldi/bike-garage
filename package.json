@@ -1,0 +1,39 @@
+{
+  "name": "bike-garage",
+  "version": "1.0.0",
+  "description": "App desktop per gestire bici, componenti, consumabili e attivita GPX",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "concurrently \"npm run vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "vite": "vite",
+    "build": "vite build",
+    "dist": "npm run build && electron-builder"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.3",
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^4.2.1",
+    "recharts": "^2.12.2",
+    "@xml-tools/parser": "^1.0.7"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "concurrently": "^8.2.2",
+    "electron": "^29.1.4",
+    "electron-builder": "^24.13.3",
+    "vite": "^5.2.6",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.francescocastaldi.bikegarage",
+    "productName": "Bike Garage",
+    "files": ["dist/**/*", "electron/**/*"],
+    "directories": { "output": "release" },
+    "win": { "target": "nsis" },
+    "mac": { "target": "dmg" },
+    "linux": { "target": "AppImage" }
+  }
+}
