@@ -16,8 +16,7 @@
     "react-router-dom": "^6.22.3",
     "leaflet": "^1.9.4",
     "react-leaflet": "^4.2.1",
-    "recharts": "^2.12.2",
-    "@xml-tools/parser": "^1.0.7"
+    "recharts": "^2.12.2"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
@@ -28,12 +27,43 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.francescocastaldi.bikegarage",
+    "appId": "com.bikegarage.app",
     "productName": "Bike Garage",
-    "files": ["dist/**/*", "electron/**/*"],
-    "directories": { "output": "release" },
-    "win": { "target": "nsis" },
-    "mac": { "target": "dmg" },
-    "linux": { "target": "AppImage" }
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "public/",
+        "to": "public/",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "public/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "public/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "public/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**/*"
+    ]
   }
 }
