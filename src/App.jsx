@@ -6,6 +6,7 @@ import BikeDetail from './pages/BikeDetail';
 import Components from './pages/Components';
 import Consumables from './pages/Consumables';
 import Activities from './pages/Activities';
+import ActivityDetail from './pages/ActivityDetail';
 import './index.css';
 
 const NAV_ITEMS = [
@@ -57,6 +58,7 @@ export default function App() {
             <Route path="/components" element={<Components />} />
             <Route path="/consumables" element={<Consumables />} />
             <Route path="/activities" element={<Activities />} />
+                          <Route path="/activities/:id" element={<ActivityDetail />} />
           </Routes>
         </main>
       </div>
