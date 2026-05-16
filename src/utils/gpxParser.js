@@ -22,43 +22,56 @@ export function parseGPX(gpxContent) {
     const heartRates = [];
     const powers = [];
     let totalDistance = 0;
+    let totalElevationGain = 0;
     let prevPoint = null;
+    let prevElevation = null;
 
     trkpts.forEach((trkpt, idx) => {
       const lat = parseFloat(trkpt.getAttribute('lat'));
       const lon = parseFloat(trkpt.getAttribute('lon'));
       const ele = trkpt.querySelector('ele');
       const time = trkpt.querySelector('time');
-      const hr = trkpt.querySelector('ns3\\:hr, hr'); // Handle namespaces
-      const power = trkpt.querySelector('ns3\\:power, power');
+
+      // Fix: handle HR/Power with multiple namespace strategies
+      // Garmin uses gpxtpx:hr or ns3:hr; try textContent-based search
+      const hrEl = _findExtensionElement(trkpt, ['hr', 'HeartRateBpm']);
+      const powerEl = _findExtensionElement(trkpt, ['power', 'Watts']);
+
+      const elevation = ele ? parseFloat(ele.textContent) : null;
 
       const point = {
         lat,
         lon,
-        elevation: ele ? parseFloat(ele.textContent) : null,
+        elevation,
         time: time ? new Date(time.textContent) : null,
-        hr: hr ? parseInt(hr.textContent) : null,
-        power: power ? parseInt(power.textContent) : null,
+        hr: hrEl ? parseInt(hrEl.textContent) : null,
+        power: powerEl ? parseInt(powerEl.textContent) : null,
       };
 
       coords.push([lat, lon]);
-      if (point.elevation !== null) elevations.push(point.elevation);
-      if (point.hr !== null) heartRates.push(point.hr);
-      if (point.power !== null) powers.push(point.power);
+      if (elevation !== null) elevations.push(elevation);
+      if (point.hr !== null && !isNaN(point.hr)) heartRates.push(point.hr);
+      if (point.power !== null && !isNaN(point.power)) powers.push(point.power);
+
+      // Elevation gain: accumulate only positive climbs
+      if (prevElevation !== null && elevation !== null) {
+        const diff = elevation - prevElevation;
+        if (diff > 0) totalElevationGain += diff;
+      }
+      if (elevation !== null) prevElevation = elevation;
 
       // Calculate distance from previous point using Haversine formula
       if (prevPoint) {
         const dist = haversineDistance(prevPoint.lat, prevPoint.lon, lat, lon);
         totalDistance += dist;
       }
-
       points.push({ ...point, distance: totalDistance });
       prevPoint = point;
     });
 
     // Get track name
     const nameEl = xmlDoc.querySelector('trk > name');
-    const name = nameEl ? nameEl.textContent : 'Imported Activity';
+    const name = nameEl ? nameEl.textContent.trim() : 'Imported Activity';
 
     // Get date from first time point
     const date = points[0]?.time || new Date();
@@ -72,37 +85,29 @@ export function parseGPX(gpxContent) {
     }
 
     // Calculate stats
-    const elevation_m = elevations.length > 0
-      ? elevations[elevations.length - 1] - elevations[0]
-      : 0;
-
     const avg_hr = heartRates.length > 0
       ? Math.round(heartRates.reduce((a, b) => a + b, 0) / heartRates.length)
       : null;
-
     const max_hr = heartRates.length > 0 ? Math.max(...heartRates) : null;
-
     const avg_watts = powers.length > 0
       ? Math.round(powers.reduce((a, b) => a + b, 0) / powers.length)
       : null;
-
     const max_watts = powers.length > 0 ? Math.max(...powers) : null;
-
-    const avg_speed = duration_sec > 0 ? (totalDistance / 1000) / (duration_sec / 3600) : null;
-    const max_speed = null; // Would need time intervals to calculate properly
+    const distKm = totalDistance / 1000;
+    const avg_speed = duration_sec > 0 ? distKm / (duration_sec / 3600) : null;
 
     return {
       name,
-      date: date.toISOString().split('T')[0],
-      distance_km: Math.round(totalDistance / 1000 * 100) / 100,
+      date: date instanceof Date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      distance_km: Math.round(distKm * 100) / 100,
       duration_sec,
-      elevation_m: Math.round(elevation_m),
+      elevation_m: Math.round(totalElevationGain), // total positive gain
       avg_hr,
       max_hr,
       avg_watts,
       max_watts,
       avg_speed: avg_speed ? Math.round(avg_speed * 10) / 10 : null,
-      max_speed,
+      max_speed: null,
       coords,
       pointsCount: coords.length,
     };
@@ -112,6 +117,25 @@ export function parseGPX(gpxContent) {
   }
 }
 
+/**
+ * Find an extension element by local name, regardless of namespace prefix.
+ * Tries multiple strategies: querySelector with escaping, then manual DOM walk.
+ */
+function _findExtensionElement(trkpt, localNames) {
+  const extensions = trkpt.querySelector('extensions');
+  if (!extensions) return null;
+
+  // Walk all descendant elements and match by localName
+  const allEls = extensions.querySelectorAll('*');
+  for (const el of allEls) {
+    const lname = el.localName.toLowerCase();
+    for (const name of localNames) {
+      if (lname === name.toLowerCase()) return el;
+    }
+  }
+  return null;
+}
+
 // Haversine formula to calculate distance between two GPS coordinates
 function haversineDistance(lat1, lon1, lat2, lon2) {
   const R = 6371000; // Earth radius in meters
@@ -119,10 +143,8 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   const dLon = toRad(lon2 - lon1);
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c; // Distance in meters
 }
