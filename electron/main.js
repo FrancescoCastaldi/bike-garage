@@ -4,13 +4,19 @@ const fs = require('fs');
 const Database = require('better-sqlite3');
 
 const isDev = process.env.NODE_ENV === 'development';
-const userDataPath = app.getPath('userData');
-const dbPath = path.join(userDataPath, 'bike-garage.db');
-const imagesDir = path.join(userDataPath, 'images');
 
-if (!fs.existsSync(imagesDir)) fs.mkdirSync(imagesDir, { recursive: true });
-
+// Paths initialized after app is ready
+let userDataPath;
+let dbPath;
+let imagesDir;
 let db;
+
+function initPaths() {
+  userDataPath = app.getPath('userData');
+  dbPath = path.join(userDataPath, 'bike-garage.db');
+  imagesDir = path.join(userDataPath, 'images');
+  if (!fs.existsSync(imagesDir)) fs.mkdirSync(imagesDir, { recursive: true });
+}
 
 function initDB() {
   db = new Database(dbPath);
@@ -78,7 +84,8 @@ function initDB() {
 }
 
 function createWindow() {
-  const win = new BrowserWindow({
+  const iconPath = path.join(__dirname, '../public/icon.png');
+  const winOptions = {
     width: 1280,
     height: 800,
     minWidth: 900,
@@ -88,9 +95,14 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false
     },
-    titleBarStyle: 'default',
-    icon: path.join(__dirname, '../public/icon.png')
-  });
+    titleBarStyle: 'default'
+  };
+  // Add icon only if it exists (optional asset)
+  if (fs.existsSync(iconPath)) {
+    winOptions.icon = iconPath;
+  }
+  const win = new BrowserWindow(winOptions);
+
   if (isDev) {
     win.loadURL('http://localhost:5173');
   } else {
@@ -99,10 +111,12 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  initPaths();
   initDB();
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
+
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 
 // ===== IPC HANDLERS =====
@@ -173,11 +187,17 @@ ipcMain.handle('activities:stats', (_, bikeId) => {
 
 // FILE DIALOG
 ipcMain.handle('dialog:openFile', async (_, filters) => {
-  const result = await dialog.showOpenDialog({ properties: ['openFile'], filters: filters || [{ name: 'All Files', extensions: ['*'] }] });
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: filters || [{ name: 'All Files', extensions: ['*'] }]
+  });
   return result.canceled ? null : result.filePaths[0];
 });
 ipcMain.handle('dialog:openImage', async () => {
-  const result = await dialog.showOpenDialog({ properties: ['openFile'], filters: [{ name: 'Images', extensions: ['jpg','jpeg','png','webp','gif'] }] });
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: [{ name: 'Images', extensions: ['jpg','jpeg','png','webp','gif'] }]
+  });
   if (result.canceled) return null;
   const srcPath = result.filePaths[0];
   const ext = path.extname(srcPath);
