@@ -1,13 +1,13 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Sidebar } from './components/layout';
-import Dashboard from './pages/Dashboard';
-import Bikes from './pages/Bikes';
-import BikeDetail from './pages/BikeDetail';
-import Components from './pages/Components';
-import Consumables from './pages/Consumables';
-import Activities from './pages/Activities';
-import ActivityDetail from './pages/ActivityDetail';
+import Dashboard from './features/dashboard/Dashboard';
+import Bikes from './features/bikes/Bikes';
+import BikeDetail from './features/bikes/BikeDetail';
+import Components from './features/components/Components';
+import Consumables from './features/consumables/Consumables';
+import Activities from './features/activities/Activities';
+import ActivityDetail from './features/activities/ActivityDetail';
 
 export default function App() {
   return (
