@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { activitiesAPI } from '../services/api';
+import { activitiesAPI } from '../bikes/api';
 
 export function useActivities(bikeId = null) {
   const [activities, setActivities] = useState([]);

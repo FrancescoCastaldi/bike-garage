@@ -1,7 +1,7 @@
 /**
  * API service for IPC communication with Electron main process
  */
-import { IPC_CHANNELS } from '../constants';
+import { IPC_CHANNELS } from '../config/constants';
 
 const invoke = (channel, ...args) => {
   if (!window.api) {

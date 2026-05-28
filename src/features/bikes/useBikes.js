@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { bikesAPI } from '../services/api';
+import { bikesAPI } from './api';
 
 export function useBikes() {
   const [bikes, setBikes] = useState([]);
